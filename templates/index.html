@@ -1,1 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ROOM - Real-Time Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght=300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-slate-100 h-[100dvh] w-screen flex justify-center items-center overflow-hidden antialiased">
 
+    <!-- Main Container -->
+    <div class="w-full h-full md:max-w-4xl md:h-[92dvh] bg-white md:rounded-2xl shadow-xl flex flex-col overflow-hidden">
+        
+        <!-- Header -->
+        <header class="px-4 py-3.5 border-b border-slate-200 bg-white flex items-center justify-between flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-100">
+                    <i class="fa-solid fa-comments text-base animate-pulse"></i>
+                </div>
+                <div>
+                    <h1 class="text-sm font-bold text-slate-800 flex items-center gap-1">
+                        ROOM <span class="text-[10px] font-normal text-slate-400 font-mono">(developer : mahendra)</span>
+                    </h1>
+                    <div id="connection-status" class="flex items-center gap-1.5 mt-0.5">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        <span class="text-[10px] font-semibold text-emerald-600">Online (Live)</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-1.5 text-[11px] bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full">
+                <i class="fa-solid fa-message text-indigo-500"></i>
+                <span class="font-medium text-slate-600"><span id="message-count">0</span> messages</span>
+            </div>
+        </header>
+
+        <!-- Dynamic Warning Banner -->
+        <div id="api-warning-banner" class="hidden bg-amber-50 border-b border-amber-200 px-4 py-2.5 text-[11px] text-amber-800 flex justify-between items-center gap-2">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation text-amber-500 animate-bounce"></i>
+                <span>Sync issue: <strong id="api-error-text" class="text-amber-600 font-mono text-[10px]"></strong></span>
+            </div>
+            <button onclick="fetchMessages()" class="text-indigo-600 hover:text-indigo-800 font-semibold underline text-[10px] whitespace-nowrap">
+                Retry
+            </button>
+        </div>
+
+        <!-- Chat Area -->
+        <main id="chat-messages" class="flex-grow p-4 overflow-y-auto bg-slate-50 flex flex-col">
+            <div id="loading-spinner" class="flex flex-col items-center justify-center h-full text-slate-400">
+                <i class="fa-solid fa-spinner animate-spin text-3xl mb-3 text-indigo-500"></i>
+                <p class="text-xs font-medium">Loading messages from API...</p>
+            </div>
+        </main>
+
+        <!-- Input Footer -->
+        <footer class="p-3 bg-white border-t border-slate-200 flex-shrink-0">
+            <form id="chat-form" class="flex flex-col sm:flex-row gap-2">
+                <div class="flex-none sm:w-44 relative">
+                    <span id="name-icon-container" class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                        <i class="fa-solid fa-user text-[11px]"></i>
+                    </span>
+                    <input 
+                        type="text" 
+                        id="name-input" 
+                        placeholder="Your name..." 
+                        required
+                        maxlength="15"
+                        class="w-full pl-8 pr-2 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs bg-slate-50 transition"
+                    >
+                </div>
+                
+                <div class="flex-grow relative">
+                    <!-- Photo Upload Button -->
+                    <button 
+                        type="button" 
+                        id="attach-btn" 
+                        class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition p-1"
+                        title="Upload Photo (Max 10MB)"
+                    >
+                        <i class="fa-solid fa-image text-sm"></i>
+                    </button>
+                    <input type="file" id="file-input" accept="image/*" class="hidden">
+
+                    <!-- Voice Recorder Button -->
+                    <button 
+                        type="button" 
+                        id="mic-btn" 
+                        class="absolute left-9 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-600 transition p-1"
+                        title="Record Voice Message (Max 30s)"
+                    >
+                        <i class="fa-solid fa-microphone text-sm"></i>
+                    </button>
+
+                    <!-- Recording Visual Overlay -->
+                    <div id="recording-overlay" class="hidden absolute inset-0 bg-rose-50 rounded-xl flex items-center justify-between px-3.5 z-10 border border-rose-200">
+                        <div class="flex items-center gap-2 text-rose-800 text-xs font-semibold">
+                            <span class="relative flex h-2 w-2">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                            </span>
+                            <span>Recording...</span>
+                            <span id="recording-timer" class="font-mono text-[11px] bg-rose-100 px-2 py-0.5 rounded text-rose-600">0s / 30s</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="cancelRecording()" class="text-[11px] text-slate-500 hover:text-slate-800 font-semibold px-1.5 py-1">Cancel</button>
+                            <button type="button" onclick="stopRecordingAndSend()" class="text-[11px] text-white bg-rose-600 hover:bg-rose-700 font-bold px-3 py-1 rounded-lg">Stop & Send</button>
+                        </div>
+                    </div>
+
+                    <input 
+                        type="text" 
+                        id="message-input" 
+                        placeholder="Type a message..." 
+                        required
+                        autocomplete="off"
+                        class="w-full pl-16 pr-10 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs bg-slate-50 transition"
+                    >
+                    <button 
+                        type="submit" 
+                        id="send-btn"
+                        class="absolute right-1.5 top-1/2 -translate-y-1/2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg p-2.5 transition flex items-center justify-center focus:outline-none"
+                    >
+                        <i class="fa-solid fa-paper-plane text-[10px]"></i>
+                    </button>
+                </div>
+            </form>
+        </footer>
+
+    </div>
+
+    <!-- Image Lightbox Modal -->
+    <div id="image-modal" class="hidden fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-center p-4 backdrop-blur-xs">
+        <button onclick="closeImageModal()" class="absolute top-4 right-4 text-white hover:text-slate-300 text-2xl transition focus:outline-none">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div class="max-w-4xl max-h-[85vh] flex items-center justify-center">
+            <img id="modal-img" src="" alt="Full view" class="max-w-full max-h-[80vh] rounded-lg shadow-2xl object-contain">
+        </div>
+        <div class="mt-4">
+            <a id="modal-download" href="" download class="text-xs text-white/90 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full transition inline-flex items-center gap-1.5">
+                <i class="fa-solid fa-download"></i> Save Image
+            </a>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-xs w-full pointer-events-none"></div>
+
+    <script>
+        const chatMessages = document.getElementById('chat-messages');
+        const chatForm = document.getElementById('chat-form');
+        const nameInput = document.getElementById('name-input');
+        const nameIconContainer = document.getElementById('name-icon-container');
+        const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
+        const attachBtn = document.getElementById('attach-btn');
+        const micBtn = document.getElementById('mic-btn');
+        const fileInput = document.getElementById('file-input');
+        const connectionStatus = document.getElementById('connection-status');
+        const messageCountEl = document.getElementById('message-count');
+        const apiWarningBanner = document.getElementById('api-warning-banner');
+        const apiErrorText = document.getElementById('api-error-text');
+
+        let lastMessageCount = 0;
+        let isSending = false;
+
+        // Audio Recorder State Variables
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordSeconds = 0;
+        let recordInterval = null;
+
+        // Hex Decoder for safe URL decoding
+        function decodeHex(hexStr) {
+            try {
+                let str = '';
+                for (let i = 0; i < hexStr.length; i += 2) {
+                    str += String.fromCharCode(parseInt(hexStr.substr(i, 2), 16));
+                }
+                return str;
+            } catch (e) {
+                console.error("Hex decode error:", e);
+                return hexStr;
+            }
+        }
+
+        // Custom image error handler
+        function handleImageError(img) {
+            img.onerror = null; 
+            const container = img.parentElement;
+            if (container) {
+                container.className = "mt-1";
+                container.removeAttribute("onclick");
+                container.innerHTML = `
+                    <div class="p-3 text-[10px] text-rose-500 bg-rose-50 border border-rose-100 rounded-xl flex items-center gap-1.5">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Photo expired (1h reached)
+                    </div>
+                `;
+            }
+        }
+
+        // Custom audio error handler
+        function handleAudioError(audio) {
+            audio.onerror = null;
+            const container = audio.parentElement;
+            if (container) {
+                container.className = "mt-1";
+                container.innerHTML = `
+                    <div class="p-3 text-[10px] text-rose-500 bg-rose-50 border border-rose-100 rounded-xl flex items-center gap-1.5 max-w-xs">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Voice message expired (1h reached)
+                    </div>
+                `;
+            }
+        }
+
+        // Custom Gorgeous Toast Notification System
+        function showToast(message, type = 'error') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto`;
+            
+            if (type === 'success') {
+                toast.className += ' bg-emerald-50 border-emerald-200 text-emerald-800';
+                toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i> <span>${escapeHTML(message)}</span>`;
+            } else if (type === 'error') {
+                toast.className += ' bg-rose-50 border-rose-200 text-rose-800';
+                toast.innerHTML = `<i class="fa-solid fa-circle-exclamation text-rose-500 text-sm"></i> <span>${escapeHTML(message)}</span>`;
+            } else {
+                toast.className += ' bg-slate-800 border-slate-700 text-white';
+                toast.innerHTML = `<i class="fa-solid fa-info-circle text-indigo-400 text-sm"></i> <span>${escapeHTML(message)}</span>`;
+            }
+
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => { toast.remove(); }, 300);
+            }, 3500);
+        }
+
+        function lockNameInput() {
+            nameInput.disabled = true;
+            nameInput.classList.remove('bg-slate-50', 'focus:ring-2', 'focus:ring-indigo-500');
+            nameInput.classList.add('bg-slate-100', 'text-slate-400', 'cursor-not-allowed', 'border-slate-200');
+            nameInput.title = "Name is locked for this session.";
+            nameIconContainer.innerHTML = `<i class="fa-solid fa-lock text-amber-500 text-[11px]"></i>`;
+        }
+
+        if (localStorage.getItem('chat_username')) {
+            nameInput.value = localStorage.getItem('chat_username');
+            lockNameInput();
+        } else {
+            const randomID = Math.floor(1000 + Math.random() * 9000);
+            nameInput.value = `User-${randomID}`;
+        }
+
+        nameInput.addEventListener('input', () => {
+            if (!nameInput.disabled) {
+                localStorage.setItem('chat_username', nameInput.value.trim());
+            }
+        });
+
+        async function fetchMessages() {
+            try {
+                const response = await fetch('/api/messages');
+                const data = await response.json();
+                
+                if (data.success) {
+                    renderMessages(data.messages);
+                    apiWarningBanner.classList.add('hidden');
+                    updateStatus(true);
+                } else {
+                    apiWarningBanner.classList.remove('hidden');
+                    apiErrorText.textContent = `(${data.error})`;
+                    updateStatus(false, data.error);
+                    showError(data.error);
+                }
+            } catch (error) {
+                console.error("Fetch failed:", error);
+                showError("Network connection problem.");
+            }
+        }
+
+        function updateStatus(isOnline, errorMsg = "") {
+            if (isOnline) {
+                connectionStatus.innerHTML = `
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span class="text-[10px] font-semibold text-emerald-600">Online (Live)</span>
+                `;
+            } else {
+                connectionStatus.innerHTML = `
+                    <span class="relative flex h-2 w-2">
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                    </span>
+                    <span class="text-[10px] font-semibold text-rose-500" title="${errorMsg}">Offline</span>
+                `;
+            }
+        }
+
+        function showError(msg) {
+            if (lastMessageCount === 0) {
+                chatMessages.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-center px-4">
+                        <i class="fa-solid fa-circle-exclamation text-rose-500 text-3xl mb-2"></i>
+                        <p class="text-xs font-semibold text-slate-700">Unable to Connect</p>
+                        <p class="text-[10px] text-slate-400 mt-1">${escapeHTML(msg)}</p>
+                        <button onclick="fetchMessages()" class="mt-3 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-[11px] font-medium hover:bg-indigo-700">
+                            Retry
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function renderMessages(messages) {
+            const currentName = nameInput.value.trim().toLowerCase();
+            const isAtBottom = chatMessages.scrollHeight - chatMessages.clientHeight <= chatMessages.scrollTop + 150;
+            
+            if (!messages || messages.length === 0) {
+                chatMessages.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-slate-400">
+                        <i class="fa-regular fa-comments text-4xl mb-2 text-slate-300"></i>
+                        <p class="text-xs font-semibold">No messages yet.</p>
+                    </div>
+                `;
+                messageCountEl.textContent = "0";
+                lastMessageCount = 0;
+                return;
+            }
+
+            // If message count has not changed, do NOT re-render to avoid layout shift!
+            if (messages.length === lastMessageCount) {
+                return;
+            }
+
+            messageCountEl.textContent = messages.length;
+            
+            let htmlContent = "";
+            messages.forEach(msg => {
+                const displayName = msg.name || "Anonymous";
+                const isMe = displayName.trim().toLowerCase() === currentName;
+                let text = (msg.message || "").trim();
+                
+                // Decode both the old safe URL (URL_) and new safe hex URL (HEX_) formats
+                if (text.startsWith("HEX_")) {
+                    text = decodeHex(text.substring(4));
+                } else if (text.startsWith("URL_")) {
+                    text = text.substring(4)
+                               .replace("HTTPS_", "https://")
+                               .replace("HTTP_", "http://")
+                               .replace(/_SL_/g, "/")
+                               .replace(/_DT_/g, ".");
+                }
+                
+                // Supports local formats as well as temporary cloud providers (catbox.moe / tmpfiles.org)
+                const isLitterbox = text.includes('catbox.moe') || text.includes('tmpfiles.org');
+                const isImage = (text.startsWith('IMG_') && text.includes('.')) || 
+                                (isLitterbox && (text.endsWith('.png') || text.endsWith('.jpg') || text.endsWith('.jpeg') || text.endsWith('.gif') || text.endsWith('.webp') || text.endsWith('.heic')));
+                const isAudio = (text.startsWith('AUD_') && text.includes('.')) || 
+                                (isLitterbox && (text.endsWith('.mp3') || text.endsWith('.wav') || text.endsWith('.webm') || text.endsWith('.ogg') || text.endsWith('.m4a')));
+                
+                let messageBody = "";
+
+                if (isImage) {
+                    let imgUrl = "";
+                    if (isLitterbox) {
+                        imgUrl = text.trim();
+                    } else {
+                        const filename = text.replace('IMG_', '').trim();
+                        imgUrl = `/uploads/${filename}`;
+                    }
+                    messageBody = `
+                        <div class="relative w-60 h-44 md:w-72 md:h-52 overflow-hidden rounded-2xl border border-slate-100 mt-1 cursor-pointer hover:opacity-95 transition bg-slate-200" onclick="viewFullImage('${imgUrl}')">
+                            <img src="${imgUrl}" alt="Sent photo" class="h-full w-full object-cover rounded-2xl animate-fade-in" onerror="handleImageError(this)">
+                            <span class="absolute bottom-1.5 right-2 bg-black/60 text-white text-[8px] px-1.5 py-0.5 rounded flex items-center gap-1 backdrop-blur-xs">
+                                <i class="fa-solid fa-clock text-[8px]"></i> 1h limit
+                            </span>
+                        </div>
+                    `;
+                } else if (isAudio) {
+                    let audUrl = "";
+                    if (isLitterbox) {
+                        audUrl = text.trim();
+                    } else {
+                        const filename = text.replace('AUD_', '').trim();
+                        audUrl = `/uploads/${filename}`;
+                    }
+                    messageBody = `
+                        <div class="flex flex-col gap-1 mt-1 p-1 bg-slate-100 border border-slate-200 rounded-xl w-60 md:w-64">
+                            <audio src="${audUrl}" controls class="w-full h-8 block" onerror="handleAudioError(this)"></audio>
+                            <span class="text-[8px] text-slate-400 self-end mr-1 flex items-center gap-0.5">
+                                <i class="fa-solid fa-clock"></i> 1h limit
+                            </span>
+                        </div>
+                    `;
+                } else {
+                    messageBody = escapeHTML(text);
+                }
+
+                const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random&color=fff&bold=true&size=100`;
+                
+                if (isMe) {
+                    htmlContent += `
+                        <div class="flex justify-end items-end gap-2 mb-3.5">
+                            <div class="flex flex-col items-end max-w-[80%]">
+                                <span class="text-[9px] text-slate-400 mr-1 mb-0.5">You</span>
+                                <div class="${(isImage || isAudio) ? 'bg-transparent p-0' : 'bg-indigo-600 text-white rounded-2xl rounded-tr-none px-3.5 py-2 shadow-sm'} text-xs break-words w-full">
+                                    ${messageBody}
+                                </div>
+                            </div>
+                            <img src="${avatarUrl}" alt="me" class="w-7 h-7 rounded-full border border-indigo-200">
+                        </div>
+                    `;
+                } else {
+                    htmlContent += `
+                        <div class="flex justify-start items-end gap-2 mb-3.5">
+                            <img src="${avatarUrl}" alt="user" class="w-7 h-7 rounded-full border border-slate-200">
+                            <div class="flex flex-col items-start max-w-[80%]">
+                                <span class="text-[9px] text-slate-500 ml-1 mb-0.5 font-semibold">${escapeHTML(displayName)}</span>
+                                <div class="${(isImage || isAudio) ? 'bg-transparent p-0' : 'bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-tl-none px-3.5 py-2 shadow-sm'} text-xs break-words w-full">
+                                    ${messageBody}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            chatMessages.innerHTML = htmlContent;
+            
+            if (isAtBottom || messages.length > lastMessageCount) {
+                scrollToBottom();
+            }
+            
+            lastMessageCount = messages.length;
+        }
+
+        function scrollToBottom() {
+            chatMessages.scrollTo({
+                top: chatMessages.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
+        // Simple HTML Escaping
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        }
+
+        // Handle text message submission
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = nameInput.value.trim();
+            const message = messageInput.value.trim();
+            
+            if (!name || !message || isSending) return;
+            
+            isSending = true;
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-[10px]"></i>`;
+            
+            try {
+                const response = await fetch('/api/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, message })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    messageInput.value = '';
+                    localStorage.setItem('chat_username', name);
+                    lockNameInput();
+                    await fetchMessages();
+                    scrollToBottom();
+                } else {
+                    showToast("Error: Message could not be sent.", "error");
+                }
+            } catch (error) {
+                console.error("Error sending:", error);
+                showToast("Please check your internet connection.", "error");
+            } finally {
+                isSending = false;
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = `<i class="fa-solid fa-paper-plane text-[10px]"></i>`;
+            }
+        });
+
+        // Trigger Hidden File Upload File picker
+        attachBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // Trigger Microphone Recording
+        micBtn.addEventListener('click', async () => {
+            const name = nameInput.value.trim();
+            if (!name) {
+                showToast("Please set your name before recording.", "error");
+                return;
+            }
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showToast("Your browser does not support voice recording.", "error");
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioChunks = [];
+                mediaRecorder = new MediaRecorder(stream);
+                
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    // Close all audio tracks to release microphone
+                    stream.getTracks().forEach(track => track.stop());
+
+                    if (audioBlob.size > 0 && recordSeconds > 0) {
+                        await uploadAndSendAudio(audioBlob);
+                    }
+                };
+
+                mediaRecorder.start();
+                showRecordingUI();
+            } catch (err) {
+                console.error("Mic access error:", err);
+                showToast("Could not access microphone. Please grant permission.", "error");
+            }
+        });
+
+        // Show Custom Recording Overlay Timer
+        function showRecordingUI() {
+            const overlay = document.getElementById('recording-overlay');
+            const timerEl = document.getElementById('recording-timer');
+            overlay.classList.remove('hidden');
+            
+            recordSeconds = 0;
+            timerEl.textContent = `0s / 30s`;
+            
+            recordInterval = setInterval(() => {
+                recordSeconds++;
+                timerEl.textContent = `${recordSeconds}s / 30s`;
+                if (recordSeconds >= 30) {
+                    stopRecordingAndSend();
+                }
+            }, 1000);
+        }
+
+        function stopRecordingAndSend() {
+            clearInterval(recordInterval);
+            document.getElementById('recording-overlay').classList.add('hidden');
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+        }
+
+        function cancelRecording() {
+            clearInterval(recordInterval);
+            document.getElementById('recording-overlay').classList.add('hidden');
+            if (mediaRecorder) {
+                mediaRecorder.ondataavailable = null; // Ignore chunks
+                if (mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                }
+            }
+            showToast("Recording cancelled.", "info");
+        }
+
+        // Upload voice recording to Flask API and share it
+        async function uploadAndSendAudio(blob) {
+            const name = nameInput.value.trim();
+            const originalIcon = micBtn.innerHTML;
+            
+            micBtn.disabled = true;
+            micBtn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin text-emerald-600 text-sm"></i>`;
+
+            const formData = new FormData();
+            formData.append('file', blob, 'voice.webm');
+
+            try {
+                const uploadResponse = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const uploadData = await uploadResponse.json();
+
+                if (uploadData.success) {
+                    // Send direct Cloud URL
+                    const audReference = uploadData.url;
+                    
+                    const postResponse = await fetch('/api/messages', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, message: audReference })
+                    });
+                    
+                    const postData = await postResponse.json();
+                    if (postData.success) {
+                        localStorage.setItem('chat_username', name);
+                        lockNameInput();
+                        await fetchMessages();
+                        scrollToBottom();
+                        showToast("Voice message sent!", "success");
+                    } else {
+                        showToast("Failed to share voice message.", "error");
+                    }
+                } else {
+                    showToast("Upload error: " + (uploadData.error || "failed"), "error");
+                }
+            } catch (error) {
+                console.error("Audio upload error:", error);
+                showToast("Voice message sending failed.", "error");
+            } finally {
+                micBtn.disabled = false;
+                micBtn.innerHTML = originalIcon;
+            }
+        }
+
+        // Handle Image Upload & Auto post 
+        fileInput.addEventListener('change', async () => {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const maxLimit = 10 * 1024 * 1024;
+            if (file.size > maxLimit) {
+                showToast("File size exceeds 10MB! Please upload a smaller image.", "error");
+                fileInput.value = '';
+                return;
+            }
+
+            const name = nameInput.value.trim();
+            if (!name) {
+                showToast("Please set your name before uploading photo.", "error");
+                fileInput.value = '';
+                return;
+            }
+
+            const originalIcon = attachBtn.innerHTML;
+            attachBtn.disabled = true;
+            attachBtn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin text-indigo-600 text-sm"></i>`;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const uploadResponse = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const uploadData = await uploadResponse.json();
+
+                if (uploadData.success) {
+                    // Send direct Cloud URL
+                    const imgReference = uploadData.url;
+                    
+                    const postResponse = await fetch('/api/messages', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, message: imgReference })
+                    });
+                    
+                    const postData = await postResponse.json();
+                    if (postData.success) {
+                        localStorage.setItem('chat_username', name);
+                        lockNameInput();
+                        await fetchMessages();
+                        scrollToBottom();
+                        showToast("Photo shared successfully!", "success");
+                    } else {
+                        showToast("Failed to share photo in the room.", "error");
+                    }
+                } else {
+                    showToast("Upload error: " + (uploadData.error || "failed"), "error");
+                }
+            } catch (error) {
+                console.error("Error sending photo:", error);
+                showToast("Attachment upload failed. Please verify your connection.", "error");
+            } finally {
+                attachBtn.disabled = false;
+                attachBtn.innerHTML = originalIcon;
+                fileInput.value = '';
+            }
+        });
+
+        // Lightbox Functions
+        function viewFullImage(url) {
+            const modal = document.getElementById('image-modal');
+            const modalImg = document.getElementById('modal-img');
+            const modalDownload = document.getElementById('modal-download');
+            
+            modalImg.src = url;
+            modalDownload.href = url;
+            modal.classList.remove('hidden');
+        }
+
+        function closeImageModal() {
+            document.getElementById('image-modal').classList.add('hidden');
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeImageModal();
+        });
+
+        fetchMessages();
+        setInterval(fetchMessages, 2000);
+    </script>
+</body>
+</html>

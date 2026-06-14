@@ -768,11 +768,10 @@
 
         fetchMessages();
         setInterval(fetchMessages, 2000);
-// STEP 4: NAME LOCK (15 DAYS) & CALL LOGIC
+// STEP 4: NAME LOCK (15 DAYS) & IMPROVED CALL LOGIC
         let jitsiAPI = null;
-        let isCallMuted = false;
 
-        // नेम लक चेक गर्ने (१५ दिनको लागि)
+        // १. नेम लक चेक गर्ने फङ्सन (१५ दिनको लागि)
         function checkNameLock() {
             const lockedName = localStorage.getItem('locked_chat_name');
             const lockTimestamp = localStorage.getItem('name_lock_timestamp');
@@ -785,7 +784,6 @@
                     nameInput.classList.add('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
                     nameIconContainer.innerHTML = `<i class="fa-solid fa-lock text-amber-500 text-[11px]"></i>`;
                 } else {
-                    // १५ दिन पुगेपछि अनलक गर्ने
                     localStorage.removeItem('locked_chat_name');
                     localStorage.removeItem('name_lock_timestamp');
                 }
@@ -800,48 +798,68 @@
             }
         }
 
-        // कल गर्ने र काट्ने फङ्सन
+        // २. लाइभ कल सुरु र बन्द गर्ने फङ्सन (FIXED)
         function toggleCall() {
             const ui = document.getElementById('call-ui');
             const name = nameInput.value.trim();
 
             if (ui.classList.contains('hidden')) {
                 if (!name) return showToast("Please set your name first.", "error");
+                
                 ui.classList.remove('hidden');
                 
-                const options = {
-                    roomName: "Mahendra-Global-Voice-Room-Unique-99",
-                    width: "100%",
-                    height: "100%",
-                    parentNode: document.querySelector('#jitsi-container'),
-                    userInfo: { displayName: name },
-                    configOverwrite: { startWithVideoMuted: true, prejoinPageEnabled: false },
-                    interfaceConfigOverwrite: { TOOLBAR_BUTTONS: [] }
-                };
-                jitsiAPI = new JitsiMeetExternalAPI("meet.jit.si", options);
-                showToast("Connected to Live Call", "success");
+                try {
+                    // Jitsi सुरु गर्ने बलियो तरिका
+                    jitsiAPI = new JitsiMeetExternalAPI("meet.jit.si", {
+                        roomName: "Mahendra-Global-Voice-Room-Unique-777",
+                        width: "100%",
+                        height: "100%",
+                        parentNode: document.querySelector('#jitsi-container'),
+                        userInfo: { displayName: name },
+                        configOverwrite: {
+                            startWithAudioMuted: false,
+                            startWithVideoMuted: true, // अडियो मात्र
+                            prejoinPageEnabled: false
+                        },
+                        interfaceConfigOverwrite: {
+                            TOOLBAR_BUTTONS: [] // बटनहरू हाइड गर्ने
+                        }
+                    });
+                    showToast("Connected to Voice Chat", "success");
+                } catch (e) {
+                    console.error("Jitsi Load Failed:", e);
+                    showToast("Call error, try again.", "error");
+                }
             } else {
-                if (jitsiAPI) jitsiAPI.dispose();
+                // कल बन्द गर्ने
+                if (jitsiAPI) {
+                    jitsiAPI.dispose();
+                    jitsiAPI = null;
+                }
                 ui.classList.add('hidden');
+                showToast("Left the Call", "info");
             }
         }
 
+        // ३. माइक्रोफोन अन-अफ गर्ने
         function toggleMuteCall() {
             if (jitsiAPI) {
                 jitsiAPI.executeCommand('toggleAudio');
-                isCallMuted = !isCallMuted;
-                document.getElementById('call-mute-btn').innerHTML = isCallMuted ? 
-                    '<i class="fa-solid fa-microphone-slash text-rose-500"></i>' : 
-                    '<i class="fa-solid fa-microphone"></i>';
+                const muteBtn = document.getElementById('call-mute-btn');
+                const isMuted = muteBtn.innerHTML.includes('fa-microphone-slash');
+                
+                muteBtn.innerHTML = isMuted ? 
+                    '<i class="fa-solid fa-microphone"></i>' : 
+                    '<i class="fa-solid fa-microphone-slash text-rose-500"></i>';
             }
         }
 
-        // मेसेज पठाउँदा वा फाइल अपलोड गर्दा नाम लक गर्ने
+        // इभेन्ट लिसनरहरू (नाम लक गर्न)
         chatForm.addEventListener('submit', () => lockNameNow(nameInput.value.trim()));
         fileInput.addEventListener('change', () => lockNameNow(nameInput.value.trim()));
         micBtn.addEventListener('click', () => lockNameNow(nameInput.value.trim()));
 
-        // पेज लोड हुँदा लक चेक गर्ने
+        // पेज लोड हुँदा सुरुमै नेम लक चेक गर्ने
         checkNameLock();
     </script>
 </body>

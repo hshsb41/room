@@ -7,10 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght=300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- STEP 1: LIVE CALL KO LAGI LIBRARY (MAILE RAKHIDIAKO CHHU) -->
-    <script src='https://meet.jit.si/external_api.js'></script>
-
     <style>
         body { font-family: 'Poppins', sans-serif; }
         ::-webkit-scrollbar { width: 5px; }
@@ -24,59 +20,31 @@
     <div class="w-full h-full md:max-w-4xl md:h-[92dvh] bg-white md:rounded-2xl shadow-xl flex flex-col overflow-hidden">
         
 <!-- Header -->
-<header class="px-4 py-3.5 border-b border-slate-200 bg-white flex items-center justify-between flex-shrink-0">
-    <div class="flex items-center gap-3">
-        <!-- Naya Image Logo -->
-        <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-indigo-100 shadow-sm flex-shrink-0">
-            <img src="https://i.ibb.co/Y4KjTgvP/Picsart-26-02-07-02-21-57-621.jpg" alt="Logo" class="w-full h-full object-cover">
-        </div>
-        <div>
-            <h1 class="text-sm font-bold text-slate-800 flex items-center gap-1">
-                ROOM <span class="text-[10px] font-normal text-slate-400 font-mono">(developer : mahendra)</span>
-            </h1>
-            <div id="connection-status" class="flex items-center gap-1.5 mt-0.5">
-                <span class="relative flex h-2 w-2">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span class="text-[10px] font-semibold text-emerald-600">Online (Live)</span>
+        <header class="px-4 py-3.5 border-b border-slate-200 bg-white flex items-center justify-between flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <!-- Naya Image Logo -->
+                <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-indigo-100 shadow-sm flex-shrink-0">
+                    <img src="https://i.ibb.co/Y4KjTgvP/Picsart-26-02-07-02-21-57-621.jpg" alt="Logo" class="w-full h-full object-cover">
+                </div>
+                <div>
+                    <h1 class="text-sm font-bold text-slate-800 flex items-center gap-1">
+                        ROOM <span class="text-[10px] font-normal text-slate-400 font-mono">(developer : mahendra)</span>
+                    </h1>
+                    <div id="connection-status" class="flex items-center gap-1.5 mt-0.5">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        <span class="text-[10px] font-semibold text-emerald-600">Online (Live)</span>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-    
-    <!-- Right Side: Call Button and Message Count -->
-    <div class="flex items-center gap-2">
-        <!-- STEP 2: LIVE CALL BUTTON (MAILE THAPIDIAKO CHHU) -->
-        <button onclick="toggleCall()" class="bg-rose-500 text-white px-3 py-1.5 rounded-full text-[10px] font-bold shadow-lg flex items-center gap-1.5 hover:bg-rose-600 transition active:scale-95">
-            <i class="fa-solid fa-phone-volume animate-bounce"></i> LIVE CALL
-        </button>
-
-        <div class="hidden sm:flex items-center gap-1.5 text-[11px] bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full">
-            <i class="fa-solid fa-message text-indigo-500"></i>
-            <span class="font-medium text-slate-600"><span id="message-count">0</span> messages</span>
-        </div>
-    </div>
-</header>
-
-<!-- STEP 3: CALL OVERLAY (यो थप) -->
-        <div id="call-ui" class="hidden absolute inset-0 z-[100] bg-slate-900 flex flex-col items-center justify-center p-6 text-white text-center">
-            <div class="w-24 h-24 bg-rose-500/10 rounded-full flex items-center justify-center mb-6 border border-rose-500/30 animate-pulse">
-                <i class="fa-solid fa-microphone-lines text-rose-500 text-4xl"></i>
-            </div>
-            <h2 class="text-2xl font-bold mb-2">LIVE CALL</h2>
-            <p class="text-slate-400 text-sm mb-10">You are now live. Everyone can hear you.</p>
             
-            <div id="jitsi-container" class="hidden"></div>
-
-            <div class="flex gap-6">
-                <button id="call-mute-btn" onclick="toggleMuteCall()" class="w-16 h-16 bg-slate-800 rounded-3xl flex items-center justify-center text-xl hover:bg-slate-700 transition">
-                    <i class="fa-solid fa-microphone"></i>
-                </button>
-                <button onclick="toggleCall()" class="bg-rose-600 w-16 h-16 rounded-3xl flex items-center justify-center text-xl shadow-xl shadow-rose-900/40 hover:bg-rose-700 transition">
-                    <i class="fa-solid fa-phone-slash"></i>
-                </button>
+            <div class="flex items-center gap-1.5 text-[11px] bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full">
+                <i class="fa-solid fa-message text-indigo-500"></i>
+                <span class="font-medium text-slate-600"><span id="message-count">0</span> messages</span>
             </div>
-        </div>
+        </header>
 
         <!-- Dynamic Warning Banner -->
         <div id="api-warning-banner" class="hidden bg-amber-50 border-b border-amber-200 px-4 py-2.5 text-[11px] text-amber-800 flex justify-between items-center gap-2">
@@ -768,99 +736,6 @@
 
         fetchMessages();
         setInterval(fetchMessages, 2000);
-// STEP 4: NAME LOCK (15 DAYS) & IMPROVED CALL LOGIC
-        let jitsiAPI = null;
-
-        // १. नेम लक चेक गर्ने फङ्सन (१५ दिनको लागि)
-        function checkNameLock() {
-            const lockedName = localStorage.getItem('locked_chat_name');
-            const lockTimestamp = localStorage.getItem('name_lock_timestamp');
-            const lockDuration = 15 * 24 * 60 * 60 * 1000; // 15 Days
-            
-            if (lockedName && lockTimestamp) {
-                if (Date.now() - parseInt(lockTimestamp) < lockDuration) {
-                    nameInput.value = lockedName;
-                    nameInput.disabled = true;
-                    nameInput.classList.add('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
-                    nameIconContainer.innerHTML = `<i class="fa-solid fa-lock text-amber-500 text-[11px]"></i>`;
-                } else {
-                    localStorage.removeItem('locked_chat_name');
-                    localStorage.removeItem('name_lock_timestamp');
-                }
-            }
-        }
-
-        function lockNameNow(name) {
-            if (!localStorage.getItem('locked_chat_name') && name !== "") {
-                localStorage.setItem('locked_chat_name', name);
-                localStorage.setItem('name_lock_timestamp', Date.now().toString());
-                checkNameLock();
-            }
-        }
-
-        // २. लाइभ कल सुरु र बन्द गर्ने फङ्सन (FIXED)
-        function toggleCall() {
-            const ui = document.getElementById('call-ui');
-            const name = nameInput.value.trim();
-
-            if (ui.classList.contains('hidden')) {
-                if (!name) return showToast("Please set your name first.", "error");
-                
-                ui.classList.remove('hidden');
-                
-                try {
-                    // Jitsi सुरु गर्ने बलियो तरिका
-                    jitsiAPI = new JitsiMeetExternalAPI("meet.jit.si", {
-                        roomName: "Mahendra-Global-Voice-Room-Unique-777",
-                        width: "100%",
-                        height: "100%",
-                        parentNode: document.querySelector('#jitsi-container'),
-                        userInfo: { displayName: name },
-                        configOverwrite: {
-                            startWithAudioMuted: false,
-                            startWithVideoMuted: true, // अडियो मात्र
-                            prejoinPageEnabled: false
-                        },
-                        interfaceConfigOverwrite: {
-                            TOOLBAR_BUTTONS: [] // बटनहरू हाइड गर्ने
-                        }
-                    });
-                    showToast("Connected to Voice Chat", "success");
-                } catch (e) {
-                    console.error("Jitsi Load Failed:", e);
-                    showToast("Call error, try again.", "error");
-                }
-            } else {
-                // कल बन्द गर्ने
-                if (jitsiAPI) {
-                    jitsiAPI.dispose();
-                    jitsiAPI = null;
-                }
-                ui.classList.add('hidden');
-                showToast("Left the Call", "info");
-            }
-        }
-
-        // ३. माइक्रोफोन अन-अफ गर्ने
-        function toggleMuteCall() {
-            if (jitsiAPI) {
-                jitsiAPI.executeCommand('toggleAudio');
-                const muteBtn = document.getElementById('call-mute-btn');
-                const isMuted = muteBtn.innerHTML.includes('fa-microphone-slash');
-                
-                muteBtn.innerHTML = isMuted ? 
-                    '<i class="fa-solid fa-microphone"></i>' : 
-                    '<i class="fa-solid fa-microphone-slash text-rose-500"></i>';
-            }
-        }
-
-        // इभेन्ट लिसनरहरू (नाम लक गर्न)
-        chatForm.addEventListener('submit', () => lockNameNow(nameInput.value.trim()));
-        fileInput.addEventListener('change', () => lockNameNow(nameInput.value.trim()));
-        micBtn.addEventListener('click', () => lockNameNow(nameInput.value.trim()));
-
-        // पेज लोड हुँदा सुरुमै नेम लक चेक गर्ने
-        checkNameLock();
     </script>
 </body>
 </html>
